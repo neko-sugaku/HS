@@ -315,21 +315,35 @@
             60% { transform: translateY(-5px); }
         }
         
-        /* 敵へのヒットアニメーション */
-        .enemy-image.hit {
-            animation: shake 0.3s ease-in-out; /* 攻撃を受けた時のアニメーション */
+        /* 新規追加: SVGを囲むラッパーとSVG自体のスタイル */
+        .enemy-image-wrapper {
+            width: 200px;
+            height: 200px;
+            margin: 0 auto 10px auto; /* 中央揃えと下マージン */
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
-        @keyframes shake {
+        #enemy-svg {
+            transform-origin: center center; /* アニメーションの原点 */
+            transition: transform 0.1s ease-out; /* ヒットアニメーションのトランジション */
+        }
+
+        /* 敵へのヒットアニメーション (SVG用) */
+        #enemy-svg.hit {
+            animation: shake-svg 0.3s ease-in-out;
+        }
+        @keyframes shake-svg {
             0%, 100% { transform: translateX(0); }
             10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
             20%, 40%, 60%, 80% { transform: translateX(5px); }
         }
-        
-        /* 新規追加：点滅アニメーション */
-        .enemy-image.flash {
-            animation: flash-effect 0.2s linear; /* 点滅アニメーションの durations を短くしました */
+
+        /* 点滅アニメーション (SVG用) */
+        #enemy-svg.flash {
+            animation: flash-effect-svg 0.2s linear;
         }
-        @keyframes flash-effect {
+        @keyframes flash-effect-svg {
             0%, 100% { opacity: 1; }
             50% { opacity: 0; }
         }
@@ -438,8 +452,19 @@
             
             <div class="enemy-section">
                 <h3>敵モンスター</h3>
-                <div class="enemy-image" role="img" aria-label="ワイバーンボス">
-                    <img id="enemy-boss-image" src="dragon.png" alt="ワイバーンボス" style="width: 200px; height: auto; margin-bottom: 10px;">
+                <div class="enemy-image-wrapper">
+                    <svg id="enemy-svg" width="200" height="200" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="ワイバーンボス">
+                        <ellipse cx="100" cy="100" rx="60" ry="40" fill="#E65100"/>
+                        <circle cx="150" cy="80" r="30" fill="#FFC107"/>
+                        <rect x="165" y="75" width="20" height="10" fill="#D32F2F" rx="2"/>
+                        <circle cx="140" cy="70" r="5" fill="white"/>
+                        <circle cx="160" cy="70" r="5" fill="white"/>
+                        <circle cx="141" cy="70" r="2" fill="black"/>
+                        <circle cx="161" cy="70" r="2" fill="black"/>
+                        <polygon points="100,60 180,20 160,80" fill="#FFECB3" stroke="#FFA000" stroke-width="2"/>
+                        <polygon points="100,140 180,180 160,120" fill="#FFECB3" stroke="#FFA000" stroke-width="2"/>
+                        <path d="M40 100 C20 120, 20 80, 40 100" stroke="#E65100" stroke-width="5" fill="none"/>
+                    </svg>
                 </div>
                 <div class="enemy-hp-bar" role="progressbar" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100" aria-label="敵の体力">
                     <div class="enemy-hp" id="enemy-hp" style="width: 100%;"></div>
@@ -490,7 +515,7 @@
             comboDisplay: document.getElementById('combo'),
             enemyHpBar: document.getElementById('enemy-hp'),
             enemyHpText: document.getElementById('enemy-hp-text'),
-            enemyBossImage: document.getElementById('enemy-boss-image'),
+            enemySvg: document.getElementById('enemy-svg'), // imgタグからsvgタグに変更
             problemDisplay: document.getElementById('problem'),
             input1: document.getElementById('input1'),
             answerDisplayWrapper: document.getElementById('answer-display-wrapper'), 
@@ -501,7 +526,7 @@
             resultMessage: document.getElementById('result-message'),
             finalStageDisplay: document.getElementById('final-stage'),
             pressEnterMessage: document.getElementById('press-enter-message'),
-            // 追加: 効果音要素
+            // 追加: 効果音要素 (これらのファイルは別途用意が必要です)
             seCorrect: document.getElementById('seCorrect'),
             seIncorrect: document.getElementById('seIncorrect'),
             seDamage: document.getElementById('seDamage'),
@@ -551,14 +576,6 @@
 
         // input1の入力イベントを監視して表示を更新
         DOMElements.input1.addEventListener('input', updateAnswerDisplay);
-        // input1のフォーカスが外れたときにIMEモードをactiveにする (入力補助のため)
-        // DOMElements.input1.addEventListener('blur', () => {
-        //     DOMElements.input1.style.imeMode = 'active';
-        // });
-        // input1にフォーカスが当たったときにIMEモードをinactiveにする (半角英数強制のため)
-        // DOMElements.input1.addEventListener('focus', () => {
-        //     DOMElements.input1.style.imeMode = 'inactive';
-        // });
 
         // --- 関数定義 ---
 
@@ -887,10 +904,10 @@
                 const damage = combo; 
                 enemyCurrentHp = Math.max(0, enemyCurrentHp - damage);
                 
-                // 敵へのヒットアニメーションと点滅アニメーションを追加
-                DOMElements.enemyBossImage.classList.add('hit', 'flash');
+                // 敵へのヒットアニメーションと点滅アニメーションを追加 (SVG要素にクラスを追加)
+                DOMElements.enemySvg.classList.add('hit', 'flash');
                 setTimeout(() => {
-                    DOMElements.enemyBossImage.classList.remove('hit', 'flash');
+                    DOMElements.enemySvg.classList.remove('hit', 'flash');
                 }, 350); // アニメーションの durations (0.3s, 0.2s) より少し長めに設定
 
                 playSound(DOMElements.seCorrect); // 正解音
@@ -987,7 +1004,7 @@
             
             if (message) { 
                 DOMElements.resultMessage.textContent = message;
-                DOMEElements.resultMessage.classList.remove('clear-message'); 
+                DOMElements.resultMessage.classList.remove('clear-message'); 
                 DOMElements.resultMessage.classList.add('victory-message'); 
             } else {
                 // モンスター撃破時はcheckAnswer関数でメッセージが既に設定されている
