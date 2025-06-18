@@ -1,0 +1,1049 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ルート簡約バトルゲーム</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            overflow: hidden;
+        }
+        
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .game-title {
+            font-size: 2.5em;
+            font-weight: bold;
+            margin-bottom: 30px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            background: linear-gradient(45deg, #ffd700, #ffed4e);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .instructions {
+            background: rgba(255,255,255,0.1);
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+            max-width: 600px;
+        }
+        
+        .instructions h3 {
+            margin-top: 0;
+            color: #ffd700;
+        }
+        
+        .difficulty-section {
+            background: rgba(255,255,255,0.1);
+            padding: 20px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+            width: 100%;
+            max-width: 700px; /* グリッドの幅を広げる */
+        }
+
+        .difficulty-section h3 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .difficulty-group {
+            margin-bottom: 20px;
+        }
+
+        .difficulty-group h4 {
+            text-align: center;
+            margin-bottom: 15px;
+            color: #add8e6;
+        }
+        
+        /* 難易度グリッドを3列表示に変更 */
+        .difficulty-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr); /* 3列に均等に配置 */
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .difficulty-option {
+            padding: 15px 20px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 10px;
+            background: rgba(255,255,255,0.1);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+        
+        .difficulty-option.selected {
+            background: rgba(173,216,230,0.3);
+            border-color: lightblue;
+            box-shadow: 0 0 20px rgba(173,216,230,0.5);
+        }
+        
+        .difficulty-option:hover {
+            background: rgba(255,255,255,0.2);
+        }
+        
+        .start-button {
+            margin-top: 30px;
+            padding: 15px 40px;
+            font-size: 1.2em;
+            background: linear-gradient(45deg, #ff6b6b, #ee5a52);
+            border: none;
+            border-radius: 25px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+        
+        .start-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+        }
+        
+        .game-screen {
+            display: none;
+            text-align: center;
+            width: 100%;
+            max-width: 800px;
+        }
+        
+        .game-hud {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 30px;
+            background: rgba(255,255,255,0.1);
+            padding: 15px 25px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+        }
+        
+        .enemy-section {
+            background: rgba(255,0,0,0.2);
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            border: 2px solid rgba(255,0,0,0.3);
+        }
+        
+        .enemy-hp-bar {
+            width: 100%;
+            height: 20px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+        
+        .enemy-hp {
+            height: 100%;
+            background: linear-gradient(90deg, #ff4444, #cc0000);
+            transition: width 0.5s ease;
+            border-radius: 10px;
+        }
+        
+        .problem-section {
+            background: rgba(255,255,255,0.1);
+            padding: 30px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            backdrop-filter: blur(10px);
+        }
+        
+        .sqrt-display {
+            font-size: 3em;
+            font-weight: bold;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            min-height: 1.2em; /* レイアウト崩れ防止 */
+        }
+        
+        .input-section {
+            position: relative; 
+            display: flex;
+            flex-direction: column; 
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            margin-top: 20px;
+            /* input-fieldとanswer-display-wrapperが重なるための高さ確保 */
+            height: 44px; /* input-fieldとanswer-display-wrapperの高さに合わせる */
+        }
+        
+        .input-field {
+            padding: 10px 15px;
+            font-size: 1.2em;
+            /* ここを修正: ボーダーを削除し、背景を完全に透明に */
+            border: none; 
+            background: transparent; 
+            color: transparent; /* 文字は透明のまま */
+            text-align: center;
+            width: 120px; 
+            height: 44px; /* answer-display-wrapperと高さを合わせる */
+            ime-mode: inactive; /* IMEを無効にする (非標準) */
+            box-sizing: border-box; /* paddingを含めたサイズにする */
+            
+            /* input-fieldをanswer-display-wrapperの真下に配置 */
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 2; /* input-fieldをanswer-display-wrapperより手前に配置（透明なので触れるように） */
+            caret-color: white; /* カーソルは表示する */
+        }
+        
+        /* input2は非表示にするため、CSSで対応 */
+        #input2 {
+            display: none !important; 
+        }
+        /* radical-rも非表示にするため、CSSで対応 */
+        #radical-r {
+            display: none !important; 
+        }
+
+        /* ユーザーが見る表示部分のスタイル */
+        #answer-display-wrapper {
+            background: rgba(255,255,255,0.1);
+            padding: 10px 15px;
+            border-radius: 8px;
+            border: 2px solid rgba(255,255,255,0.3);
+            min-width: 120px; 
+            width: 120px; /* input-fieldと幅を合わせる */
+            height: 44px; /* input-fieldと同じ高さ */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2em;
+            color: #ffd700; /* 黄色の文字色 */
+            box-sizing: border-box; 
+            
+            /* input-fieldの裏に配置するための設定 */
+            position: absolute; /* absoluteに統一 */
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1; /* input-fieldより奥に配置 */
+            pointer-events: none; /* クリックイベントを透過させる */
+        }
+        
+        .combo-display {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #ffd700;
+            margin-bottom: 10px;
+        }
+        
+        .feedback {
+            font-size: 1.2em;
+            font-weight: bold;
+            margin-top: 10px;
+            min-height: 30px;
+        }
+        
+        .correct {
+            color: #4CAF50;
+            animation: bounce 0.5s ease;
+        }
+        
+        .incorrect {
+            color: #f44336;
+            animation: shake 0.5s ease;
+        }
+        
+        .game-over-screen {
+            display: none;
+            text-align: center;
+        }
+
+        /* クリア時のメッセージスタイル */
+        .clear-message {
+            font-size: 2.2em;
+            font-weight: bold;
+            color: #76FF03; /* 鮮やかな緑色 */
+            margin-bottom: 20px;
+            animation: tada 1s infinite alternate; /* 褒めるアニメーション */
+            text-shadow: 0 0 15px #00FF00, 0 0 20px #00CC00;
+            line-height: 1.4; /* 行間を広げて見やすく */
+        }
+        @keyframes tada {
+            from {
+                transform: scale3d(1, 1, 1);
+            }
+            10%, 20% {
+                transform: scale3d(.9, .9, .9) rotate3d(0, 0, 1, -3deg);
+            }
+            30%, 50%, 70%, 90% {
+                transform: scale3d(1.1, 1.1, 1.1) rotate3d(0, 0, 1, 3deg);
+            }
+            40%, 60%, 80% {
+                transform: scale3d(1.1, 1.1, 1.1) rotate3d(0, 0, 1, -3deg);
+            }
+            to {
+                transform: scale3d(1, 1, 1);
+            }
+        }
+        
+        .victory-message {
+            font-size: 2em;
+            font-weight: bold;
+            color: #ffd700;
+            margin-bottom: 20px;
+        }
+        
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+            40% { transform: translateY(-10px); }
+            60% { transform: translateY(-5px); }
+        }
+        
+        /* 敵へのヒットアニメーション */
+        .enemy-image.hit {
+            animation: shake 0.3s ease-in-out; /* 攻撃を受けた時のアニメーション */
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+            20%, 40%, 60%, 80% { transform: translateX(5px); }
+        }
+        
+        /* 新規追加：点滅アニメーション */
+        .enemy-image.flash {
+            animation: flash-effect 0.2s linear; /* 点滅アニメーションの durations を短くしました */
+        }
+        @keyframes flash-effect {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+
+        .timer {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #ffd700;
+        }
+        
+        .timer.warning {
+            color: #ff4444;
+            animation: pulse 1s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* アクセシビリティ用 - 視覚的に非表示 */
+        .visually-hidden {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            margin: -1px;
+            padding: 0;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            border: 0;
+        }
+    </style>
+</head>
+<body>
+    <audio id="seCorrect" src="se_correct.wav" preload="auto" volume="0.5"></audio>
+    <audio id="seIncorrect" src="se_incorrect.wav" preload="auto" volume="0.5"></audio>
+    <audio id="seDamage" src="se_damage.wav" preload="auto" volume="0.5"></audio>
+    <audio id="seClear" src="se_clear.wav" preload="auto" volume="0.5"></audio>
+    <audio id="seTimeUp" src="se_timeup.wav" preload="auto" volume="0.5"></audio>
+
+    <div class="container">
+        <section id="start-screen">
+            <h1 class="game-title">ルート簡約バトル</h1>
+            
+            <div class="instructions" role="contentinfo">
+                <h3>📖 遊び方</h3>
+                <p><strong>ルート簡約:</strong> <strong>√27</strong> → <kbd>3</kbd> + <kbd>r</kbd> + <kbd>3</kbd> + <kbd>Enter</kbd></p>
+                <p><strong>ルートに戻す:</strong> <strong>5√2</strong> → 解答欄に <kbd>50</kbd> + <kbd>Enter</kbd> (√は表示済み)</p>
+                <p>連続正解でコンボダメージ！敵を倒してステージクリアを目指そう！</p>
+                <p style="font-size: 0.9em; opacity: 0.8;">※ゲーム中は自動で半角英数入力モードになります。</p>
+            </div>
+            
+            <div class="difficulty-section" role="radiogroup" aria-labelledby="difficulty-heading">
+                <h3 id="difficulty-heading">🎯 難易度選択</h3>
+
+                <div class="difficulty-group">
+                    <h4>ルート簡約 (例: √50 → 5√2)</h4>
+                    <div class="difficulty-grid">
+                        <div class="difficulty-option selected" data-game-mode="simplify" data-difficulty="1" tabindex="0" role="radio" aria-checked="true" aria-label="ルート簡約 イージー ルート1からルート50">
+                            <div>★ イージー</div>
+                            <div>√1 ~ √50</div>
+                        </div>
+                        <div class="difficulty-option" data-game-mode="simplify" data-difficulty="2" tabindex="0" role="radio" aria-checked="false" aria-label="ルート簡約 ノーマル ルート1からルート80">
+                            <div>★★ ノーマル</div>
+                            <div>√1 ~ √80</div>
+                        </div>
+                        <div class="difficulty-option" data-game-mode="simplify" data-difficulty="3" tabindex="0" role="radio" aria-checked="false" aria-label="ルート簡約 ハード ルート1からルート100">
+                            <div>★★★ ハード</div>
+                            <div>√1 ~ √100</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="difficulty-group">
+                    <h4>ルートに戻す (例: 5√2 → √50)</h4>
+                    <div class="difficulty-grid">
+                        <div class="difficulty-option" data-game-mode="expand" data-difficulty="1" tabindex="0" role="radio" aria-checked="false" aria-label="ルートに戻す イージー ルート50まで">
+                            <div>☆ イージー</div>
+                            <div>√50まで</div>
+                        </div>
+                        <div class="difficulty-option" data-game-mode="expand" data-difficulty="2" tabindex="0" role="radio" aria-checked="false" aria-label="ルートに戻す ノーマル ルート80まで">
+                            <div>☆☆ ノーマル</div>
+                            <div>√80まで</div>
+                        </div>
+                        <div class="difficulty-option" data-game-mode="expand" data-difficulty="3" tabindex="0" role="radio" aria-checked="false" aria-label="ルートに戻す ハード ルート100まで">
+                            <div>☆☆☆ ハード</div>
+                            <div>√100まで</div>
+                        </div>
+                    </div>
+                </div>
+
+                <p style="margin-top: 15px; font-size: 0.9em; opacity: 0.8;">
+                    矢印キーで選択、Enterで決定
+                </p>
+            </div>
+            
+            <button class="start-button" id="startGameButton">ゲーム開始</button>
+        </section>
+        
+        <section id="game-screen" class="game-screen">
+            <div class="game-hud">
+                <div>ステージ: <span id="stage" aria-live="polite">1</span></div>
+                <div class="timer" id="timer" aria-live="polite">30</div>
+                <div>コンボ: <span id="combo" class="combo-display" aria-live="polite">0</span></div>
+            </div>
+            
+            <div class="enemy-section">
+                <h3>敵モンスター</h3>
+                <div class="enemy-image" role="img" aria-label="ワイバーンボス">
+                    <img id="enemy-boss-image" src="dragon.png" alt="ワイバーンボス" style="width: 200px; height: auto; margin-bottom: 10px;">
+                </div>
+                <div class="enemy-hp-bar" role="progressbar" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100" aria-label="敵の体力">
+                    <div class="enemy-hp" id="enemy-hp" style="width: 100%;"></div>
+                </div>
+                <div id="enemy-hp-text">100/100</div>
+            </div>
+            
+            <div class="problem-section">
+                <div class="sqrt-display" id="problem" aria-live="assertive">√25</div>
+                <div class="input-section">
+                    <label for="input1" class="visually-hidden">答えを入力</label>
+                    <input type="text" class="input-field" id="input1" 
+                               inputmode="numeric" 
+                               autocomplete="off" 
+                               autocorrect="off" 
+                               autocapitalize="off" 
+                               spellcheck="false"
+                               aria-describedby="answer-display-wrapper">
+                    
+                    <div id="answer-display-wrapper" aria-live="polite">
+                        <span id="prefix-display"></span><span id="answer-display"></span><span id="suffix-display"></span>
+                    </div>
+
+                    </div>
+                <div class="feedback" id="feedback" aria-live="assertive"></div>
+            </div>
+        </section>
+        
+        <section id="game-over-screen" class="game-over-screen">
+            <h2 class="victory-message" id="result-message" aria-live="assertive"></h2> 
+            <p id="final-stage" style="display: none;">到達ステージ: 1</p> 
+            <p id="press-enter-message" style="font-size: 1.1em; margin-top: 20px;">Enterキーを押してスタート画面に戻る</p>
+            <button class="start-button" id="resetGameButton" style="display: none;">もう一度プレイ</button> 
+        </section>
+    </div>
+
+    <script>
+        // DOM要素のキャッシュ
+        const DOMElements = {
+            startScreen: document.getElementById('start-screen'),
+            gameScreen: document.getElementById('game-screen'),
+            gameOverScreen: document.getElementById('game-over-screen'),
+            startGameButton: document.getElementById('startGameButton'),
+            resetGameButton: document.getElementById('resetGameButton'),
+            difficultyOptions: document.querySelectorAll('.difficulty-option'),
+            stageDisplay: document.getElementById('stage'),
+            timerDisplay: document.getElementById('timer'),
+            comboDisplay: document.getElementById('combo'),
+            enemyHpBar: document.getElementById('enemy-hp'),
+            enemyHpText: document.getElementById('enemy-hp-text'),
+            enemyBossImage: document.getElementById('enemy-boss-image'),
+            problemDisplay: document.getElementById('problem'),
+            input1: document.getElementById('input1'),
+            answerDisplayWrapper: document.getElementById('answer-display-wrapper'), 
+            prefixDisplay: document.getElementById('prefix-display'),
+            answerDisplay: document.getElementById('answer-display'), 
+            suffixDisplay: document.getElementById('suffix-display'),
+            feedbackDisplay: document.getElementById('feedback'),
+            resultMessage: document.getElementById('result-message'),
+            finalStageDisplay: document.getElementById('final-stage'),
+            pressEnterMessage: document.getElementById('press-enter-message'),
+            // 追加: 効果音要素
+            seCorrect: document.getElementById('seCorrect'),
+            seIncorrect: document.getElementById('seIncorrect'),
+            seDamage: document.getElementById('seDamage'),
+            seClear: document.getElementById('seClear'),
+            seTimeUp: document.getElementById('seTimeUp'),
+        };
+
+        // ゲーム状態変数
+        let selectedDifficulty = 1;
+        let selectedGameMode = 'simplify'; // 'simplify' (簡約) または 'expand' (展開)
+        let currentStage = 1; 
+        let combo = 0;
+        let timeLeft = 30;
+        let gameTimer;
+        let currentProblem = {};
+        let enemyMaxHp = 100;
+        let enemyCurrentHp = 100;
+        let awaitingEnter = false; // Enterキー待機状態フラグ
+
+        // 難易度ごとの問題の最大値
+        const difficultyRanges = {
+            simplify: { // ルート簡約モード
+                1: 50,   // ★: √1 ~ √50
+                2: 80,   // ★★: √1 ~ √80
+                3: 100   // ★★★: √1 ~ √100
+            },
+            expand: { // ルートに戻すモード (結果の√の中の最大値)
+                1: 50,   // ☆: 結果が√50まで
+                2: 80,   // ☆☆: 結果が√80まで
+                3: 100   // ☆☆☆: 結果が√100まで
+            }
+        };
+
+        // --- イベントリスナーの登録 ---
+        document.addEventListener('DOMContentLoaded', initializeGame);
+        document.addEventListener('keydown', handleGlobalKeydown);
+        DOMElements.startGameButton.addEventListener('click', startGame);
+
+        // 難易度オプションのクリックイベント
+        DOMElements.difficultyOptions.forEach(option => {
+            option.addEventListener('click', () => {
+                selectedDifficulty = parseInt(option.dataset.difficulty);
+                selectedGameMode = option.dataset.gameMode;
+                updateDifficultySelection();
+            });
+        });
+
+        // input1の入力イベントを監視して表示を更新
+        DOMElements.input1.addEventListener('input', updateAnswerDisplay);
+        // input1のフォーカスが外れたときにIMEモードをactiveにする (入力補助のため)
+        // DOMElements.input1.addEventListener('blur', () => {
+        //     DOMElements.input1.style.imeMode = 'active';
+        // });
+        // input1にフォーカスが当たったときにIMEモードをinactiveにする (半角英数強制のため)
+        // DOMElements.input1.addEventListener('focus', () => {
+        //     DOMElements.input1.style.imeMode = 'inactive';
+        // });
+
+        // --- 関数定義 ---
+
+        // 音を再生する関数
+        function playSound(audioElement) {
+            if (audioElement) {
+                audioElement.currentTime = 0; // 再生位置を先頭に戻す
+                audioElement.play().catch(e => console.log("Audio play failed:", e)); // エラー回避
+            }
+        }
+
+        function initializeGame() {
+            // 初期選択をルート簡約のイージーにする
+            const initialOption = document.querySelector('.difficulty-option[data-game-mode="simplify"][data-difficulty="1"]');
+            if (initialOption) {
+                selectedDifficulty = parseInt(initialOption.dataset.difficulty);
+                selectedGameMode = initialOption.dataset.gameMode;
+            }
+            updateDifficultySelection();
+            DOMElements.startScreen.style.display = 'block';
+            DOMElements.gameScreen.style.display = 'none';
+            DOMElements.gameOverScreen.style.display = 'none';
+            DOMElements.pressEnterMessage.style.display = 'none'; // 初期状態では非表示
+            DOMElements.difficultyOptions[0].focus(); 
+        }
+
+        function handleGlobalKeydown(e) {
+            if (DOMElements.startScreen.style.display !== 'none') {
+                handleStartScreenKeydown(e);
+            } else if (DOMElements.gameScreen.style.display !== 'none') {
+                handleGameScreenKeydown(e);
+            } else if (DOMElements.gameOverScreen.style.display !== 'none' && awaitingEnter) {
+                if (e.key === 'Enter') {
+                    resetGame();
+                }
+            }
+        }
+
+        function handleStartScreenKeydown(e) {
+            let currentSelected = document.querySelector('.difficulty-option.selected');
+            if (!currentSelected) {
+                currentSelected = DOMElements.difficultyOptions[0];
+                selectedDifficulty = parseInt(currentSelected.dataset.difficulty);
+                selectedGameMode = currentSelected.dataset.gameMode;
+                updateDifficultySelection();
+                currentSelected.focus();
+                e.preventDefault();
+                return;
+            }
+
+            let currentIndex = Array.from(DOMElements.difficultyOptions).indexOf(currentSelected);
+            let newIndex = currentIndex;
+            const optionsPerRow = 3; // 1行あたりのオプション数
+
+            if (e.key === 'ArrowUp') {
+                // 同じ列の上の行に移動
+                newIndex = currentIndex - optionsPerRow;
+                if (newIndex < 0) { // 上限を超えたら一番下の行の同じ列へループ
+                    newIndex = DOMElements.difficultyOptions.length - (optionsPerRow - (currentIndex % optionsPerRow));
+                    // 最終行のオプションが3つ未満の場合の調整
+                    if (newIndex >= DOMElements.difficultyOptions.length) {
+                        newIndex = DOMElements.difficultyOptions.length - 1 - (DOMElements.difficultyOptions.length - 1 - currentIndex) % optionsPerRow;
+                    }
+                }
+            } else if (e.key === 'ArrowDown') {
+                // 同じ列の下の行に移動
+                newIndex = currentIndex + optionsPerRow;
+                if (newIndex >= DOMElements.difficultyOptions.length) { // 下限を超えたら一番上の行の同じ列へループ
+                    newIndex = currentIndex % optionsPerRow;
+                }
+            } else if (e.key === 'ArrowLeft') {
+                // 同じ行内で左に移動
+                // 現在の行の開始インデックス
+                const currentRowStart = Math.floor(currentIndex / optionsPerRow) * optionsPerRow;
+                newIndex = Math.max(currentRowStart, currentIndex - 1);
+            } else if (e.key === 'ArrowRight') {
+                // 同じ行内で右に移動
+                // 現在の行の終了インデックス (最大インデックスを超えないように)
+                const currentRowEnd = Math.min(DOMElements.difficultyOptions.length - 1, Math.floor(currentIndex / optionsPerRow) * optionsPerRow + optionsPerRow - 1);
+                newIndex = Math.min(currentRowEnd, currentIndex + 1);
+            } else if (e.key === 'Enter') {
+                startGame();
+                e.preventDefault();
+                return;
+            } else {
+                return;
+            }
+
+            if (newIndex !== currentIndex) {
+                selectedDifficulty = parseInt(DOMElements.difficultyOptions[newIndex].dataset.difficulty);
+                selectedGameMode = DOMElements.difficultyOptions[newIndex].dataset.gameMode;
+                updateDifficultySelection();
+                DOMElements.difficultyOptions[newIndex].focus();
+                e.preventDefault();
+            }
+        }
+
+
+        function handleGameScreenKeydown(e) {
+            if (e.key === 'Enter') {
+                checkAnswer();
+            }
+        }
+
+        function updateDifficultySelection() {
+            DOMElements.difficultyOptions.forEach(option => {
+                const isSelected = (parseInt(option.dataset.difficulty) === selectedDifficulty && option.dataset.gameMode === selectedGameMode);
+                option.classList.toggle('selected', isSelected);
+                option.setAttribute('aria-checked', isSelected);
+            });
+        }
+
+        function startGame() {
+            DOMElements.startScreen.style.display = 'none';
+            DOMElements.gameScreen.style.display = 'block';
+            
+            currentStage = 1; 
+            combo = 0;
+            timeLeft = 30;
+            enemyCurrentHp = enemyMaxHp; 
+
+            updateDisplay();
+            generateProblem();
+            startTimer();
+            
+            DOMElements.input1.focus(); // ここで確実にフォーカス
+        }
+
+        // 素数判定ヘルパー関数 (ルート展開問題生成用)
+        function isPrime(num) {
+            if (num <= 1) return false;
+            if (num <= 3) return true;
+            if (num % 2 === 0 || num % 3 === 0) return false;
+            for (let i = 5; i * i <= num; i = i + 6) {
+                if (num % i === 0 || num % (i + 2) === 0) return false;
+            }
+            return true;
+        }
+
+        // 簡約できない数を生成するヘルパー関数 (ルート展開問題生成用)
+        function getRandomIrreducibleRadical(maxVal) {
+            let num;
+            const triedNumbers = new Set(); // 試した数を記録して無限ループを避ける
+            const maxAttemptsForRadical = 1000;
+            let attempts = 0;
+
+            while (attempts < maxAttemptsForRadical) {
+                attempts++;
+                num = Math.floor(Math.random() * (maxVal - 1)) + 2; // 2からmaxValまでの範囲で生成
+                if (num < 2) continue; // 2未満は除外
+                if (triedNumbers.has(num)) {
+                    continue; // 既に試した数ならスキップ
+                }
+                triedNumbers.add(num);
+
+                // 素数、または簡約してもルートから外に出ない数を探す
+                const simplified = simplifySquareRoot(num);
+                if (simplified.radical === num) { // これ以上簡約できない数
+                    return num;
+                }
+            }
+            // 適切な数が見つからなかった場合、デフォルト値を返す (例: 2)
+            console.warn(`Could not find an irreducible radical up to ${maxVal}. Returning 2.`);
+            return 2; 
+        }
+
+
+        function generateProblem() {
+            let number, simplified;
+            const maxRange = difficultyRanges[selectedGameMode][selectedDifficulty];
+
+            if (selectedGameMode === 'simplify') {
+                do {
+                    number = Math.floor(Math.random() * maxRange) + 1;
+                    simplified = simplifySquareRoot(number);
+                } while (simplified.coefficient === 1 && simplified.radical === number); // 簡約できない数字は除外
+                
+                currentProblem = { original: number, simplified: simplified };
+                DOMElements.problemDisplay.textContent = `√${number}`;
+                DOMElements.prefixDisplay.textContent = ''; // 簡約モードではプレフィックスなし
+                DOMElements.suffixDisplay.textContent = ''; // 簡約モードではサフィックスなし
+
+            } else { // expand mode
+                let coeff, rad, originalNumber;
+                let attempts = 0;
+                const maxAttempts = 500; // 無限ループ防止のため試行回数を制限
+
+                do {
+                    attempts++;
+                    // 係数は2以上
+                    // coeffの最大値は sqrt(maxRange / 2) とする。radの最小値2を考慮
+                    const maxCoeff = Math.floor(Math.sqrt(maxRange / 2));
+                    if (maxCoeff < 2) { // 係数2を生成できない場合は固定値
+                        coeff = 2;
+                    } else {
+                        coeff = Math.floor(Math.random() * (maxCoeff - 1)) + 2; // 2からmaxCoeffまで
+                    }
+
+                    // ルート内の数字 (rad) はこれ以上簡約できない数
+                    // radの最大値は maxRange / (coeff * coeff) を超えないように
+                    const maxRadForCoeff = Math.floor(maxRange / (coeff * coeff));
+                    rad = getRandomIrreducibleRadical(maxRadForCoeff); 
+                    
+                    if (rad < 2) { // radが1になるのを避ける
+                        continue; 
+                    }
+
+                    originalNumber = coeff * coeff * rad;
+                    
+                    // 生成されたoriginalNumberがmaxRangeを超えていないか
+                    // simplifySquareRootで確認し、係数がcoeffと一致し、radicalがradと一致するか（つまり、それ以上簡約できない形であるか）
+                    const currentSimplified = simplifySquareRoot(originalNumber);
+                    
+                    if (originalNumber <= maxRange && 
+                        currentSimplified.coefficient === coeff && 
+                        currentSimplified.radical === rad &&
+                        coeff > 1 && rad > 1 // 係数が1より大きく、ルートの中も1より大きいことを再確認
+                    ) {
+                        break; // 有効な問題が見つかった
+                    }
+                } while (attempts < maxAttempts);
+
+                if (attempts >= maxAttempts) {
+                    console.warn("Could not generate a suitable 'expand' problem after many attempts. Falling back to a simpler problem like 2√2.");
+                    // フォールバック処理: 例えば、最も簡単な問題にするとか (2√2 = √8)
+                    coeff = 2;
+                    rad = 2;
+                    originalNumber = 8; 
+                }
+
+                simplified = { coefficient: coeff, radical: rad };
+                currentProblem = { original: originalNumber, simplified: simplified };
+                DOMElements.problemDisplay.textContent = `${formatAnswer(simplified)}`; // 5√2 のように表示
+                DOMElements.prefixDisplay.textContent = '√'; // ルートに戻すモードでは√をプレフィックスとして表示
+                DOMElements.suffixDisplay.textContent = ''; // サフィックスなし
+            }
+            
+            clearInputs();
+            DOMElements.input1.focus(); // ここで確実にフォーカス
+            updateAnswerDisplay(); // 問題生成時に解答表示も初期化
+        }
+
+        function simplifySquareRoot(n) {
+            let coefficient = 1;
+            let radical = n;
+            
+            for (let i = 2; i * i <= n; i++) {
+                while (radical % (i * i) === 0) {
+                    coefficient *= i;
+                    radical /= (i * i);
+                }
+            }
+            return { coefficient, radical };
+        }
+
+        function clearInputs() {
+            DOMElements.input1.value = '';
+            DOMElements.feedbackDisplay.textContent = '';
+            DOMElements.feedbackDisplay.className = 'feedback'; 
+            DOMElements.answerDisplay.textContent = ''; 
+            DOMElements.prefixDisplay.textContent = selectedGameMode === 'expand' ? '√' : ''; // ルートに戻すなら√
+            DOMElements.suffixDisplay.textContent = '';
+        }
+
+        function checkAnswer() {
+            const input1Value = DOMElements.input1.value.trim();
+            
+            if (!input1Value) {
+                DOMElements.feedbackDisplay.textContent = '答えを入力してください！';
+                DOMElements.feedbackDisplay.className = 'feedback incorrect';
+                DOMElements.input1.focus(); 
+                return;
+            }
+
+            let isCorrect = false;
+            let correctAnswerString = ''; // 正解表示用の文字列
+
+            if (selectedGameMode === 'simplify') {
+                let userCoeff = 0;
+                let userRadical = 1;
+                const inputParts = input1Value.toLowerCase().split('r'); // 'r' を小文字に統一
+                
+                if (inputParts.length > 1) {
+                    userCoeff = parseInt(inputParts[0]) || 1; 
+                    userRadical = parseInt(inputParts[1]) || 1; 
+                } else {
+                    userCoeff = parseInt(input1Value) || 0;
+                    userRadical = 1; 
+                }
+
+                if (isNaN(userCoeff) || isNaN(userRadical) || userCoeff < 0 || userRadical < 1) {
+                    DOMElements.feedbackDisplay.textContent = '有効な数値を入力してください。';
+                    DOMElements.feedbackDisplay.className = 'feedback incorrect';
+                    DOMElements.input1.focus(); 
+                    return;
+                }
+                
+                // ユーザーの入力も簡約して、正解と厳密に比較する
+                const userSimplified = simplifySquareRoot(userCoeff * userCoeff * userRadical);
+
+                if (currentProblem.simplified.radical === 1) {
+                    // √25 -> 5 の場合など
+                    isCorrect = (userCoeff === currentProblem.simplified.coefficient && userRadical === 1);
+                } else {
+                    // √50 -> 5r2 の場合など
+                    isCorrect = (userSimplified.coefficient === currentProblem.simplified.coefficient && 
+                                 userSimplified.radical === currentProblem.simplified.radical);
+                }
+                correctAnswerString = formatAnswer(currentProblem.simplified);
+
+            } else { // expand mode
+                const userAnswer = parseInt(input1Value);
+                if (isNaN(userAnswer) || userAnswer < 1) {
+                    DOMElements.feedbackDisplay.textContent = '有効な数値を入力してください。';
+                    DOMElements.feedbackDisplay.className = 'feedback incorrect';
+                    DOMElements.input1.focus(); 
+                    return;
+                }
+                // ここが重要: currentProblem.original は展開した後のルート内の値
+                isCorrect = (userAnswer === currentProblem.original);
+                correctAnswerString = `√${currentProblem.original}`; // ルートに戻すモードの正解表示
+            }
+            
+            if (isCorrect) {
+                combo++;
+                const damage = combo; 
+                enemyCurrentHp = Math.max(0, enemyCurrentHp - damage);
+                
+                // 敵へのヒットアニメーションと点滅アニメーションを追加
+                DOMElements.enemyBossImage.classList.add('hit', 'flash');
+                setTimeout(() => {
+                    DOMElements.enemyBossImage.classList.remove('hit', 'flash');
+                }, 350); // アニメーションの durations (0.3s, 0.2s) より少し長めに設定
+
+                playSound(DOMElements.seCorrect); // 正解音
+                playSound(DOMElements.seDamage); // ダメージ音
+                DOMElements.feedbackDisplay.textContent = `正解！ ${damage}ダメージ！`;
+                DOMElements.feedbackDisplay.className = 'feedback correct';
+                
+                if (enemyCurrentHp <= 0) {
+                    clearInterval(gameTimer); 
+                    playSound(DOMElements.seClear); // クリア音
+                    
+                    DOMElements.resultMessage.textContent = `
+                        計算の神が君の降臨を待ち望んでいた！\n
+                        君の知性は、まさに輝く星のよう！\n
+                        恐るべきワイバーンを見事討伐したぞ！\n
+                        世界が君の勝利を讃えている！\n
+                        感動をありがとう！！
+                    `; 
+                    DOMElements.resultMessage.classList.remove('victory-message'); 
+                    DOMElements.resultMessage.classList.add('clear-message'); 
+                    
+                    DOMElements.feedbackDisplay.textContent = ''; 
+
+                    DOMElements.enemyHpBar.style.width = '0%'; 
+                    DOMElements.enemyHpText.textContent = `0/${enemyMaxHp}`;
+
+                    awaitingEnter = true;
+                    endGame(''); 
+                    
+                } else {
+                    updateDisplay();
+                    setTimeout(() => {
+                        generateProblem(); // 正解後に次の問題を生成
+                    }, 500); // フィードバック表示のために少し遅延
+                }
+                
+            } else {
+                combo = 0; 
+                playSound(DOMElements.seIncorrect); // 不正解音
+                DOMElements.feedbackDisplay.textContent = `不正解... 正解: ${correctAnswerString}`;
+                DOMElements.feedbackDisplay.className = 'feedback incorrect';
+                updateDisplay();
+                setTimeout(() => {
+                    generateProblem(); // 不正解後に次の問題を生成
+                }, 800); // フィードバック表示のために少し遅延
+            }
+        }
+
+        // ルートの表示形式を整形するヘルパー関数
+        function formatAnswer(problem) {
+            // problem は { coefficient, radical } オブジェクトを想定
+            if (problem.radical === 1) {
+                return problem.coefficient.toString();
+            } else if (problem.coefficient === 1) {
+                return `√${problem.radical}`;
+            } else {
+                return `${problem.coefficient}√${problem.radical}`;
+            }
+        }
+
+        function updateDisplay() {
+            DOMElements.stageDisplay.textContent = currentStage;
+            DOMElements.comboDisplay.textContent = combo;
+            DOMElements.enemyHpBar.style.width = `${(enemyCurrentHp / enemyMaxHp) * 100}%`;
+            DOMElements.enemyHpText.textContent = `${enemyCurrentHp}/${enemyMaxHp}`;
+            DOMElements.enemyHpBar.parentElement.setAttribute('aria-valuenow', enemyCurrentHp);
+            DOMElements.timerDisplay.textContent = timeLeft; // タイマー表示を常に更新
+        }
+
+        function startTimer() {
+            clearInterval(gameTimer); // 既存のタイマーがあればクリア
+            DOMElements.timerDisplay.classList.remove('warning'); 
+            DOMElements.timerDisplay.textContent = timeLeft; // 初期値を表示
+
+            gameTimer = setInterval(() => {
+                timeLeft--;
+                DOMElements.timerDisplay.textContent = timeLeft;
+                
+                if (timeLeft <= 10) {
+                    DOMElements.timerDisplay.classList.add('warning');
+                }
+                
+                if (timeLeft <= 0) {
+                    endGame('時間切れだ！また挑戦しよう！'); 
+                    playSound(DOMElements.seTimeUp); // 時間切れ音
+                }
+            }, 1000);
+        }
+
+        function endGame(message) {
+            clearInterval(gameTimer);
+            DOMElements.gameScreen.style.display = 'none';
+            DOMElements.gameOverScreen.style.display = 'block';
+            
+            if (message) { 
+                DOMElements.resultMessage.textContent = message;
+                DOMEElements.resultMessage.classList.remove('clear-message'); 
+                DOMElements.resultMessage.classList.add('victory-message'); 
+            } else {
+                // モンスター撃破時はcheckAnswer関数でメッセージが既に設定されている
+            }
+            
+            DOMElements.finalStageDisplay.style.display = 'none'; 
+            DOMElements.resetGameButton.style.display = 'none'; 
+            DOMElements.pressEnterMessage.style.display = 'block'; 
+
+            awaitingEnter = true; 
+        }
+
+        function resetGame() {
+            awaitingEnter = false;
+            DOMElements.gameOverScreen.style.display = 'none';
+            DOMElements.startScreen.style.display = 'block';
+            DOMElements.timerDisplay.classList.remove('warning');
+            DOMElements.resultMessage.textContent = '';
+            DOMElements.resultMessage.classList.remove('clear-message', 'victory-message');
+            DOMElements.pressEnterMessage.style.display = 'none'; 
+            initializeGame(); 
+        }
+
+        // 入力欄の表示を更新する関数
+        function updateAnswerDisplay() {
+            const inputVal = DOMElements.input1.value.trim();
+            
+            if (selectedGameMode === 'simplify') {
+                const inputParts = inputVal.toLowerCase().split('r'); // 'r' を小文字に統一
+                if (inputParts.length > 1) {
+                    const coeff = inputParts[0] || '';
+                    const rad = inputParts[1] || '';
+                    if (rad) {
+                        DOMElements.answerDisplay.textContent = `${coeff}`;
+                        DOMElements.prefixDisplay.textContent = ''; // 簡約モードではプレフィックスなし
+                        DOMElements.suffixDisplay.textContent = `√${rad}`;
+                    } else if (coeff) {
+                        DOMElements.answerDisplay.textContent = `${coeff}`;
+                        DOMElements.prefixDisplay.textContent = '';
+                        DOMElements.suffixDisplay.textContent = `√`; // 'r' だけの場合も表示
+                    } else {
+                        DOMElements.answerDisplay.textContent = '';
+                        DOMElements.prefixDisplay.textContent = '';
+                        DOMElements.suffixDisplay.textContent = '';
+                    }
+                } else {
+                    DOMElements.answerDisplay.textContent = inputVal;
+                    DOMElements.prefixDisplay.textContent = '';
+                    DOMElements.suffixDisplay.textContent = '';
+                }
+            } else { // expand mode
+                DOMElements.prefixDisplay.textContent = '√';
+                DOMElements.answerDisplay.textContent = inputVal;
+                DOMElements.suffixDisplay.textContent = '';
+            }
+        }
+    </script>
+</body>
+</html>
